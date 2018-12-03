@@ -6,6 +6,7 @@
 'Testing the feasibility of setting/resetting the RF451 module settings in CR6-RF451 datalogger
 
 'Declare Constants
+'These are factory default settings for CR6-RF451 configurations (except RadOn). Using this to turn radio module off before resetting.
 Const DefRadOn = 0
 Const DefOpMode = 2
 Const DefFreqKey = 0
@@ -23,6 +24,15 @@ Const DefSlaveRepeat = 0
 Const DefTxSubID = 15
 Const DefRxSubID = 15
 Const DefNetID = 1234
+
+'Constants about the network links
+Const IsMaster = False 'is this datalogger the master within the network?
+Const NetworkSlaves = 3 'how many nodes are in the system?
+Const NeighborA = 3 'PakBus address of one of the nodes
+Const NeighborB = 4
+Const NeighborC = 5
+Const NeighborD = 6
+
 
 'Declare Public Variables
 ' Declare placeholders for all RF451 Settings
@@ -49,6 +59,15 @@ Public RadTxSubID As Long 'Min = 0, Max = 15
 Public RadNetID As Long 'Network ID, Min= 0, Max = 4095
 
 Public Count
+
+#If IsMaster = True Then
+Public SendToPB(NetworkSlaves) As Float
+Public SendTo3result As Float
+Public SendTo3Fail As Float
+Public LinkTo3dead As Boolean
+#Else
+Public MasterReceive As Float
+#EndIf
 
 SetStatus ("USRDriveSize",16384)
 'Define Data Tables
@@ -233,23 +252,49 @@ SequentialMode
 BeginProg
 '  Call StoreRadDefaults
 	Scan (15,Sec,0,0)
+	  #If IsMaster = True Then
+	  SendToPB(1) = SendToPB(1) + 1
+	  SendVariables (SendTo3result,COMRF,-1,3,0000,0,"Public","MasterReceive",SendToPB(1),1)
+	  If SendTo3result <> 0 Then
+	    SendTo3Fail = SendTo3Fail + 1
+	    Else
+	    SendTo3Fail = 0
+	    LinkTo3dead = False
+	  EndIf
+	  If SendTo3Fail >= 5 Then
+	    LinkTo3dead = True
+	  EndIf
+	  #EndIf
   If ReadRadSettings = True Then
     Call ReadRF
     Call StoreRadSettings
   EndIf
-  If SetRadSettings = True Then
+#If IsMaster = True Then
+  If SetRadSettings = True OR LinkTo3dead = True Then
     Call ResetRadDefault
     Call ReadRF
     Delay (1,200,mSec)
     Call SetRadSetting
     Call ReadRF
     Call StoreRadSettings
+    LinkTo3dead = False
+    SendTo3Fail = 0
   EndIf
+  #Else
+    If SetRadSettings = True Then
+    Call ResetRadDefault
+    Call ReadRF
+    Delay (1,200,mSec)
+    Call SetRadSetting
+    Call ReadRF
+    Call StoreRadSettings
+    EndIf
   If SetRadToDefault = True Then
     Call ResetRadDefault
     Call ReadRF
     SetRadToDefault = False
   EndIf
+  #EndIf
 		'Enter other measurement instructions
 		'Call Output Tables
 		'Example:
