@@ -26,13 +26,40 @@ Const DefRxSubID = 15
 Const DefNetID = 1234
 
 'Constants about the network links
-Const IsMaster = False 'is this datalogger the master within the network?
-Const NetworkSlaves = 3 'how many nodes are in the system?
-Const NeighborA = 3 'PakBus address of one of the nodes
-Const NeighborB = 4
-Const NeighborC = 5
-Const NeighborD = 6
+Const IsMaster = True 'is this datalogger the master within the network?
+Const RadioNetwork = True 'Is this station part of a radio network?
 
+#If IsMaster = True AND RadioNetwork = True Then
+Const NetworkSlaves = 2 'How many nodes are in the system?
+#If NetworkSlaves = 1 Then 'Declare how many nodes are in the system with conditional compile
+Const NeighborA = 3 'PakBus address of Node "A"
+Public NeighborAsecurity = "0000" 'Security code of neighbor A (use "0000" if no security code is set)
+#ElseIf NetworkSlaves = 2 Then
+Const NeighborA = 3
+Public NeighborAsecurity = "0000"
+Const NeighborB = 4 'PakBus address of Node "B"
+Public NeighborBsecurity = "0000" 'Security code of neighbor B (use "0000" if no security code is set)
+#ElseIf NetworkSlaves = 3 Then
+Const NeighborA = 3
+Const NeighborAsecurity = "0000"
+Const NeighborB = 4
+Const NeighborBsecurity = "0000"
+Const NeighborC = 5 'PakBus address of Node "C"
+Public NeighborCsecurity = "0000" 'Security code of neighbor C (use "0000" if no security code is set)
+#ElseIf NetworkSlaves = 4 Then
+Const NeighborA = 3
+Const NeighborAsecurity = "0000"
+Const NeighborB = 4
+Public NeighborBsecurity = "0000"
+Const NeighborC = 5
+Public NeighborCsecurity = "0000"
+Const NeighborD = 6 'PakBus address of Node "D"
+Public NeighborDsecurity = "0000" 'Security code of neighbor D (use "0000" if no security code is set)
+#EndIf
+#ElseIf RadioNetwork = True AND IsMaster = False Then
+Const MasterPB = 2
+Public MasterSecurity = "0000"
+#EndIf
 
 'Declare Public Variables
 ' Declare placeholders for all RF451 Settings
@@ -58,15 +85,70 @@ Public RadRxSubID As Long 'Min = 0, Max = 15
 Public RadTxSubID As Long 'Min = 0, Max = 15
 Public RadNetID As Long 'Network ID, Min= 0, Max = 4095
 
+#IfDef IsMaster Then
+Public ResetMaster As Boolean
+#Else
+Public ResetSlave As Boolean
+#EndIf
+
+Public RadResetAttempts As Float
+Public AllLinksDead As Float
+Const MaxLinksDeadCnt = 10
 Public Count
 
-#If IsMaster = True Then
-Public SendToPB(NetworkSlaves) As Float
-Public SendTo3result As Float
-Public SendTo3Fail As Float
-Public LinkTo3dead As Boolean
-#Else
+#If IsMaster = True AND RadioNetwork = True Then
+Public SendToNetwork As Float
+#If NetworkSlaves = 1 Then
+ Public SendToAresult As Float
+Public SendToAFail As Float
+Public MaxAFails = 5
+Public LinkToAdead As Boolean
+#ElseIf NetworkSlaves = 2 Then
+  Public SendToAresult As Float
+  Public SendToAFail As Float
+  Public MaxAFails = 5
+  Public LinkToAdead As Boolean
+  Public SendToBresult As Float
+  Public SendToBFail As Float
+  Public MaxBFails = 5
+  Public LinkToBdead As Boolean
+#ElseIf NetworkSlaves = 3 Then
+  Public SendToAresult As Float
+  Public SendToAFail As Float
+  Public MaxAFails = 5
+  Public LinkToAdead As Boolean
+  Public SendToBresult As Float
+  Public SendToBFail As Float
+  Public MaxBFails = 5
+  Public LinkToBdead As Boolean
+  Public SendToCresult As Float
+  Public SendToCFail As Float
+  Public MaxCFails = 5
+  Public LinkToCdead As Boolean
+#ElseIf NetworkSlaves = 4 Then
+  Public SendToAresult As Float
+  Public SendToAFail As Float
+  Public MaxAFails = 5
+  Public LinkToAdead As Boolean
+  Public SendToBresult As Float
+  Public SendToBFail As Float
+  Public MaxBFails = 5
+  Public LinkToBdead As Boolean
+  Public SendToCresult As Float
+  Public SendToCFail As Float
+  Public MaxCFails = 5
+  Public LinkToCdead As Boolean
+  Public SendToDresult As Float
+  Public SendToDFail As Float
+  Public MaxDFails = 5
+  Public LinkToDdead As Boolean
+#EndIf
+#ElseIf IsMaster = False AND RadioNetwork = True Then
 Public MasterReceive As Float
+Public GetResult As Float
+Public GetFail As Float
+Public MaxGetFails = 5
+Public LinkDead As Boolean
 #EndIf
 
 SetStatus ("USRDriveSize",16384)
@@ -247,58 +329,225 @@ Sub SetRadSetting
   SetRadSettings = False
 EndSub
 
+#If RadioNetwork = True Then
+  #If IsMaster = True Then
+Sub CheckLinks
+  SendToNetwork = SendToNetwork + 1
+  If SendToNetwork >= 150 Then
+    SendToNetwork = 0
+  EndIf
+  #If NetworkSlaves = 1 Then
+    SendVariables (SendToAresult,COMRF,-1,NeighborA,NeighborAsecurity,0,"Public","MasterReceive",SendToNetwork,1)
+    If SendToAresult <> 0 Then
+      SendToAFail = SendToAFail + 1
+      Else
+        SendToAFail = 0
+        LinkToAdead = False
+        RadResetAttempts = 0
+    EndIf
+    If SendToAFail >= MaxAFails
+    LinkToAdead = True
+    ResetMaster = True
+    SendToAFail = 0
+    EndIf
+  #EndIf
+  #If NetworkSlaves = 2 Then
+    SendVariables (SendToAresult,COMRF,-1,NeighborA,NeighborAsecurity,0,"Public","MasterReceive",SendToNetwork,1)
+    If SendToAresult <> 0 Then
+      SendToAFail = SendToAFail + 1
+      RadResetAttempts = 0
+      Else
+        SendToAFail = 0
+        LinkToAdead = False
+    EndIf
+    If SendToAFail >= MaxAFails
+    LinkToAdead = True
+    SendToAFail = 0
+    EndIf
+    SendVariables (SendToBresult,COMRF,-1,NeighborB,NeighborBsecurity,0,"Public","MasterReceive",SendToNetwork,1)
+    If SendToBresult <> 0 Then
+      SendToBFail = SendToBFail + 1
+      Else
+        SendToBFail = 0
+        LinkToBdead = False
+        RadResetAttempts = 0
+    EndIf
+    If SendToBFail >= MaxBFails
+    LinkToBdead = True
+    EndIf
+    If LinkToAdead AND LinkToBdead Then
+      AllLinksDead = AllLinksDead + 1
+      If AllLinksDead >= MaxLinksDeadCnt Then
+      ResetMaster = True
+      SendToAFail = 0
+      SendToBFail = 0
+      AllLinksDead = 0
+    EndIf
+    #EndIf
+    #If NetworkSlaves = 3 Then
+        SendVariables (SendToAresult,COMRF,-1,NeighborA,NeighborAsecurity,0,"Public","MasterReceive",SendToNetwork,1)
+    If SendToAresult <> 0 Then
+      SendToAFail = SendToAFail + 1
+      Else
+        SendToAFail = 0
+        LinkToAdead = False
+        RadResetAttempts = 0
+    EndIf
+    If SendToAFail >= MaxAFails
+    LinkToAdead = True
+    EndIf
+    SendVariables (SendToBresult,COMRF,-1,NeighborB,NeighborBsecurity,0,"Public","MasterReceive",SendToNetwork,1)
+    If SendToBresult <> 0 Then
+      SendToBFail = SendToBFail + 1
+      Else
+        SendToBFail = 0
+        LinkToBdead = False
+        RadResetAttempts = 0
+    EndIf
+    If SendToBFail >= MaxBFails
+    LinkToBdead = True
+    EndIf
+    SendVariables (SendToCresult,COMRF,-1,NeighborC,NeighborCsecurity,0,"Public","MasterReceive",SendToNetwork,1)
+    If SendToCresult <> 0 Then
+      SendToCFail = SendToCFail + 1
+      Else
+        SendToCFail = 0
+        LinkToCdead = False
+        RadResetAttempts = 0
+    EndIf
+    If SendToCFail >= MaxCFails
+    LinkToCdead = True
+    EndIf
+    If LinkToAdead AND LinkToBdead AND LinkToCdead Then
+            AllLinksDead = AllLinksDead + 1
+      If AllLinksDead >= MaxLinksDeadCnt Then
+      ResetMaster = True
+      SendToAFail = 0
+      SendToBFail = 0
+      SendToCFail = 0
+      AllLinksDead = 0
+    EndIf
+  #EndIf
+  #If NetworkSlaves = 4 Then
+    SendVariables (SendToAresult,COMRF,-1,NeighborA,NeighborAsecurity,0,"Public","MasterReceive",SendToNetwork,1)
+    If SendToAresult <> 0 Then
+      SendToAFail = SendToAFail + 1
+      Else
+        SendToAFail = 0
+        LinkToAdead = False
+        RadResetAttempts = 0
+    EndIf
+    If SendToAFail >= MaxAFails
+    LinkToAdead = True
+    EndIf
+    SendVariables (SendToBresult,COMRF,-1,NeighborB,NeighborBsecurity,0,"Public","MasterReceive",SendToNetwork,1)
+    If SendToBresult <> 0 Then
+      SendToBFail = SendToBFail + 1
+      Else
+        SendToBFail = 0
+        LinkToBdead = False
+        RadResetAttempts = 0
+    EndIf
+    If SendToBFail >= MaxBFails
+    LinkToBdead = True
+    EndIf
+    SendVariables (SendToCresult,COMRF,-1,NeighborC,NeighborCsecurity,0,"Public","MasterReceive",SendToNetwork,1)
+    If SendToCresult <> 0 Then
+      SendToCFail = SendToCFail + 1
+      Else
+        SendToCFail = 0
+        LinkToCdead = False
+        RadResetAttempts = 0
+    EndIf
+    If SendToCFail >= MaxCFails
+    LinkToCdead = True
+    EndIf
+    SendVariables (SendToDresult,COMRF,-1,NeighborD,NeighborDsecurity,0,"Public","MasterReceive",SendToNetwork,1)
+    If SendToDresult <> 0 Then
+      SendToDFail = SendToDFail + 1
+      Else
+        SendToDFail = 0
+        LinkToDdead = False
+        RadResetAttempts = 0
+    EndIf
+    If SendToDFail >= MaxDFails
+    LinkToDdead = True
+    EndIf
+    If LinkToAdead AND LinkToBdead AND LinkToCdead AND LinkToDdead Then
+      AllLinksDead = AllLinksDead + 1
+      If AllLinksDead >= MaxLinksDeadCnt Then
+      ResetMaster = True
+      SendToAFail = 0
+      SendToBFail = 0
+      SendToCFail = 0
+      SendToDFail = 0
+      AllLinksDead = 0
+      EndIf
+    EndIf
+    #EndIf
+    EndIf
+ EndSub
+ #EndIf
+ 
+ #If IsMaster = False Then
+   Sub CheckSlaveLink
+     GetVariables (GetResult,COMRF,-1,MasterPB,MasterSecurity,0,"Public","SendToNetwork",MasterReceive,1)
+     If GetResult <> 0 Then
+       GetFail = GetFail + 1
+       Else
+       GetFail = 0
+       LinkDead = False
+       RadResetAttempts = 0
+     EndIf
+     If GetFail >= MaxGetFails Then
+       LinkDead = True
+     EndIf
+     If LinkDead = True Then
+       ResetSlave = True
+       GetFail = 0
+       EndIf
+    EndSub
+ #EndIf
+ #EndIf
 SequentialMode
 'Main Program
 BeginProg
 '  Call StoreRadDefaults
 	Scan (15,Sec,0,0)
-	  #If IsMaster = True Then
-	  SendToPB(1) = SendToPB(1) + 1
-	  SendVariables (SendTo3result,COMRF,-1,3,0000,0,"Public","MasterReceive",SendToPB(1),1)
-	  If SendTo3result <> 0 Then
-	    SendTo3Fail = SendTo3Fail + 1
-	    Else
-	    SendTo3Fail = 0
-	    LinkTo3dead = False
-	  EndIf
-	  If SendTo3Fail >= 5 Then
-	    LinkTo3dead = True
-	  EndIf
-	  #EndIf
+	#If RadioNetwork = True Then
   If ReadRadSettings = True Then
     Call ReadRF
     Call StoreRadSettings
   EndIf
+  Call CheckLinks
 #If IsMaster = True Then
-  If SetRadSettings = True OR LinkTo3dead = True Then
+  If SetRadSettings = True OR ResetMaster = True Then
     Call ResetRadDefault
     Call ReadRF
     Delay (1,200,mSec)
     Call SetRadSetting
     Call ReadRF
     Call StoreRadSettings
-    LinkTo3dead = False
-    SendTo3Fail = 0
+    RadResetAttempts = RadResetAttempts + 1
   EndIf
   #Else
-    If SetRadSettings = True Then
+    If SetRadSettings = True OR ResetSlave = True Then
     Call ResetRadDefault
     Call ReadRF
     Delay (1,200,mSec)
     Call SetRadSetting
     Call ReadRF
     Call StoreRadSettings
+    RadResetAttempts = RadResetAttempts + 1
     EndIf
+   #EndIf
   If SetRadToDefault = True Then
     Call ResetRadDefault
     Call ReadRF
     SetRadToDefault = False
   EndIf
-  #EndIf
-		'Enter other measurement instructions
-		'Call Output Tables
-		'Example:
 		CallTable Test
+ #EndIf
 	NextScan
 EndProg
 
