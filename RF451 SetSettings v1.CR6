@@ -26,7 +26,7 @@ Const DefRxSubID = 15
 Const DefNetID = 1234
 
 'Constants about the network links
-Const IsMaster = True 'is this datalogger the master within the network?
+Const IsMaster = False 'is this datalogger the master within the network?
 Const RadioNetwork = True 'Is this station part of a radio network?
 
 #If IsMaster = True AND RadioNetwork = True Then
@@ -85,7 +85,7 @@ Public RadRxSubID As Long 'Min = 0, Max = 15
 Public RadTxSubID As Long 'Min = 0, Max = 15
 Public RadNetID As Long 'Network ID, Min= 0, Max = 4095
 
-#IfDef IsMaster Then
+#IfDef IsMaster = True Then
 Public ResetMaster As Boolean
 #Else
 Public ResetSlave As Boolean
@@ -519,22 +519,23 @@ BeginProg
     Call ReadRF
     Call StoreRadSettings
   EndIf
-  Call CheckLinks
 #If IsMaster = True Then
+    Call CheckLinks
   If SetRadSettings = True OR ResetMaster = True Then
     Call ResetRadDefault
     Call ReadRF
-    Delay (1,200,mSec)
+    Delay (1,2,Sec)
     Call SetRadSetting
     Call ReadRF
     Call StoreRadSettings
     RadResetAttempts = RadResetAttempts + 1
   EndIf
   #Else
+    Call CheckSlaveLink
     If SetRadSettings = True OR ResetSlave = True Then
     Call ResetRadDefault
     Call ReadRF
-    Delay (1,200,mSec)
+    Delay (1,2,Sec)
     Call SetRadSetting
     Call ReadRF
     Call StoreRadSettings
