@@ -56,9 +56,9 @@ Public NeighborCsecurity = "0000"
 Const NeighborD = 6 'PakBus address of Node "D"
 Public NeighborDsecurity = "0000" 'Security code of neighbor D (use "0000" if no security code is set)
 #EndIf
-#ElseIf RadioNetwork = True AND IsMaster = False Then
-Const MasterPB = 2
-Public MasterSecurity = "0000"
+#ElseIf RadioNetwork = True AND IsMaster = False Then 'if it's part of a radio network but not the master datalogger
+Const MasterPB = 2 'PakBus address of master datalogger
+Public MasterSecurity = "0000" 'security code of master datalogger
 #EndIf
 
 'Declare Public Variables
@@ -85,16 +85,16 @@ Public RadRxSubID As Long 'Min = 0, Max = 15
 Public RadTxSubID As Long 'Min = 0, Max = 15
 Public RadNetID As Long 'Network ID, Min= 0, Max = 4095
 
-#IfDef IsMaster = True Then
+#IfDef IsMaster = True Then 'using #ifDef to substitue one variable for another based on the user selection
 Public ResetMaster As Boolean
 #Else
 Public ResetSlave As Boolean
 #EndIf
 
-Public RadResetAttempts As Float
-Public AllLinksDead As Float
-Const MaxLinksDeadCnt = 10
-Public Count
+Public RadResetAttempts As Float 'how many times has the radio attempted a reset?
+Public AllLinksDead As Float 'are all the links dead?
+Const MaxLinksDeadCnt = 10 'max number of times all links can be dead before a reset is attempted.
+Public Count 'test variable
 
 #If IsMaster = True AND RadioNetwork = True Then
 Public SendToNetwork As Float
