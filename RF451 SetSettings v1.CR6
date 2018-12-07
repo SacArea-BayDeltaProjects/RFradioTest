@@ -85,9 +85,7 @@ Public RadRxSubID As Long 'Min = 0, Max = 15
 Public RadTxSubID As Long 'Min = 0, Max = 15
 Public RadNetID As Long 'Network ID, Min= 0, Max = 4095
 
-#IfDef IsMaster = True Then 'using #ifDef to substitue one variable for another based on the user selection
-Public ResetMaster As Boolean 'Set to true (automatically or manually) to reset the master radio
-#Else
+#If IsMaster = False Then 'If Not master then define Reset Slave
 Public ResetSlave As Boolean 'Set to true (automatically or manually) to reset the slave radio
 #EndIf
 
@@ -96,13 +94,16 @@ Public NextTryCnt As Float 'counter to see how long it's been since last reset
 Public MaxNextTryCnt = 10 'user threshold for how long to wait between reset attempts
 Public ResetTryOK As Boolean 'flag to tell logger enough time passed to try a reset again. Set to True on Compile, then to false once a reset has been tried
 Public RadResetAttempts As Float 'how many times has the radio attempted a reset?
-'Public AllLinksDead As Float 'counter to record how many times all links have been dead
+
 Const MaxLinksDeadCnt = 10 'max number of times all links can be dead before a reset is attempted.
 Public Count 'test variable
 
 'Declare variables based on if the logger is in a radio network and whether it's the master in the network or not.
 #If IsMaster = True AND RadioNetwork = True Then
+  #If NetworkSlaves > 0 Then
+    Public AllLinksDead As Float 'counter to record how many times all links have been dead
 Public SendToNetwork As Float 'Placeholder variable to send to the network, used to get response from loggers whether communication is successful or not
+Public ResetMaster As Boolean
 #If NetworkSlaves = 1 Then 'if there is only one node in the network (Simple Master/Slave communication, 2 dataloggers in network, 1 master, 1 slave)
 Public SendToAresult As Float 'Result of whether the SendVariable worked or not (cue for if comms were successful)
 Public SendToAFail As Float 'count for how many times the comms have failed
@@ -147,6 +148,7 @@ Public MaxAFails = 5
   Public SendToDFail As Float
   Public MaxDFails = 5
   Public LinkToDdead As Boolean
+  #EndIf
 #EndIf
 #ElseIf IsMaster = False AND RadioNetwork = True Then 'if the datalogger is in the network, but not the master
 Public MasterReceive As Float 'Variable to store value from the master datalogger
@@ -155,6 +157,7 @@ Public GetFail As Float 'counter for how many times communications have failed
 Public MaxGetFails = 5 'threshold for how many times comms can fail before resetting the radio
 Public LinkDead As Boolean 'flag to indicate the link is considered dead (counter exceeded threshold)
 #EndIf
+
 
 SetStatus ("USRDriveSize",16384) 'establish space on the USR drive. If this is not present, datalogger will not create a USR drive. Number of bytes must be an increment of 512 with a minimum of 8192.
 'Define Data Tables
@@ -535,7 +538,8 @@ Sub CheckLinks 'follow this subroutine
 SequentialMode
 'Main Program
 BeginProg
-ResetTryOk = True 'It's ok to try a reset once initial dead thresholds have been met, no need to wait.
+ResetTryOK = True 'It's ok to try a reset once initial dead thresholds have been met, no need to wait.
+NextTryCnt = MaxNextTryCnt 'set nexttry to maxnexttry so we can reset the radio without waiting the first time.
 	Scan (15,Sec,0,0)
 	#If RadioNetwork = True Then 'only compile if it's in a radio network
   If ReadRadSettings = True Then 'if user wants to store radio settings
@@ -590,7 +594,7 @@ ResetTryOk = True 'It's ok to try a reset once initial dead thresholds have been
     Call ReadRF 'read in new settings, but don't store settings to USR because these settings are established as Constants and don't need to be stored.
     SetRadToDefault = False 'reset flag to false
   EndIf
-
+ResetTried = False 'set flag to false to start counter (if necessary)
 		CallTable Test
  #EndIf
 	NextScan
