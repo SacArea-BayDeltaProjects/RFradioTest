@@ -4,9 +4,19 @@
 'Program author: Trevor Violette
 
 'Testing the feasibility of setting/resetting the RF451 module settings in CR6-RF451 datalogger
+'Start of Constants Customization Section
+Const RadioNetwork = False 'Is the datalogger part of a radio network
+'value = True
+'value = False
+Const IsMaster = True  'Is the datalogger the Master in a radio network?
+'value = True
+'value = False
+'End of Constants Customization Section
 
 'Declare Constants
 'These are factory default settings for CR6-RF451 configurations (except RadOn). Using this to turn radio module off before resetting.
+#If LoggerType = CR6 Then
+  #If RadioNetwork Then
 Const DefRadOn = 0
 Const DefOpMode = 2
 Const DefFreqKey = 0
@@ -24,13 +34,14 @@ Const DefSlaveRepeat = 0
 Const DefTxSubID = 15
 Const DefRxSubID = 15
 Const DefNetID = 1234
-
+#EndIf
+#EndIf
 'Constants about the network links
-Const IsMaster = False 'is this datalogger the master within the network?
-Const RadioNetwork = True 'Is this station part of a radio network?
-
-#If IsMaster = True AND RadioNetwork = True Then
-  ConstTable
+'Const IsMaster = True 'is this datalogger the master within the network?
+'Const RadioNetwork = True 'Is this station part of a radio network?
+#If RadioNetwork = True Then
+#If IsMaster = True Then
+ConstTable
 Const NetworkSlaves = 2 'How many nodes are in the system?
 EndConstTable
 #If NetworkSlaves = 1 Then 'Declare how many nodes are in the system with conditional compile
@@ -57,15 +68,16 @@ Public NeighborCpb = 5
 Public NeighborCSecCode = "0000"
 Public NeighborDpb = 6 'PakBus address of Node "D"
 Public NeighborDSecCode = "0000" 'Security code of neighbor D (use "0000" if no security code is set)
-#EndIf
-#ElseIf RadioNetwork = True AND IsMaster = False Then 'if it's part of a radio network but not the master datalogger
+#EndIf 'If Master
+#ElseIf IsMaster = False Then 'if it's part of a radio network but not the master datalogger
 Public MasterPB = 2 'PakBus address of master datalogger
 Public MasterSecCode = "0000" 'security code of master datalogger
+#EndIf 'If Slave
 #EndIf
 
 'Declare Public Variables
 ' Declare placeholders for all RF451 Settings
-
+#If RadioNetwork = True Then
 Public ReadRadSettings As Boolean 'Trigger to read in radio settings
 Public SetRadSettings As Boolean 'Trigger to reset radio settings
 Public SetRadToDefault As Boolean 'Trigger to Reset radio to factory defaults
@@ -98,7 +110,7 @@ Public ResetTryOK As Boolean 'flag to tell logger enough time passed to try a re
 Public RadResetAttempts As Float 'how many times has the radio attempted a reset?
 
 Const MaxLinksDeadCnt = 10 'max number of times all links can be dead before a reset is attempted.
-
+#EndIf
 'Declare variables based on if the logger is in a radio network and whether it's the master in the network or not.
 #If IsMaster = True AND RadioNetwork = True Then
   #If NetworkSlaves > 0 Then
@@ -208,9 +220,10 @@ Sample (1,ResetTried,Boolean)
 Sample (1,RadResetAttempts,FP2)
 #EndIf 'Not master
 EndTable
-#EndIf 'Radio Network
+#EndIf
 
 'Define Subroutines
+#If RadioNetwork = True Then
 '__________________________READ IN CURRENT SETTINGS OF RADIO_______________________
 Sub ReadRF
     RadOn = Settings.RadioEnabled
@@ -351,7 +364,7 @@ Sub SetRadSetting
 EndSub
 
 '_____________________________Establish means of verifying successful communication
-#If RadioNetwork = True Then 'if datalogger is part of radio network
+
   #If IsMaster = True Then 'if it's the master in the network
 Sub CheckLinks 'follow this subroutine
   SendToNetwork = SendToNetwork + 1 'placeholder variable used to send to slave loggers
@@ -361,30 +374,30 @@ Sub CheckLinks 'follow this subroutine
   #If NetworkSlaves = 1 Then 'if there's one slave in the network
     SendVariables (SendToAresult,COMRF,-1,NeighborApb,NeighborASecCode,0,"Public","MasterReceive",SendToNetwork,1) 'send "SendToNetwork Variable to Node "A".
     If SendToAresult <> 0 Then 'Result from above, 0 = successful comms, non-0 = failure of some sort.
-      SendToAFailCntCnt = SendToAFailCntCnt + 1 'if comms failed, count up
+      SendToAFailCnt = SendToAFailCnt + 1 'if comms failed, count up
       Else 'if comms successful
-        SendToAFailCntCnt = 0 'reset counter
+        SendToAFailCnt = 0 'reset counter
         LinkToAdead = False 'set "Dead" flag to false
         ResetMaster = False 'don't set flag to reset the radio
         RadResetAttempts = 0 'Set reset attempt counter back to 0
     EndIf
-    If SendToAFailCntCnt >= MaxAFails 'if fail counter exceeds threshold
+    If SendToAFailCnt >= MaxAFails 'if fail counter exceeds threshold
     LinkToAdead = True 'all links are dead
     ResetMaster = True 'set reset flag
-    SendToAFailCntCnt = 0 'reset counter to 0, use counter to make sure radio doesn't continually attempt to reset once the link is considered dead
+    SendToAFailCnt = 0 'reset counter to 0, use counter to make sure radio doesn't continually attempt to reset once the link is considered dead
     EndIf
   #EndIf
   #If NetworkSlaves = 2 Then 'if 2 slaves in the network, see comments above
     SendVariables (SendToAresult,COMRF,-1,NeighborApb,NeighborASecCode,0,"Public","MasterReceive",SendToNetwork,1) 'Slave A
     If SendToAresult <> 0 Then
-      SendToAFailCntCnt = SendToAFailCntCnt + 1
+      SendToAFailCnt = SendToAFailCnt + 1
       RadResetAttempts = 0
       Else
-        SendToAFailCntCnt = 0
+        SendToAFailCnt = 0
         LinkToAdead = False
         ResetMaster = False 'don't set flag to reset the radio
     EndIf
-    If SendToAFailCntCnt >= MaxAFails
+    If SendToAFailCnt >= MaxAFails
     LinkToAdead = True
     SendToAFailCnt = 0
     EndIf
@@ -545,8 +558,10 @@ Sub CheckLinks 'follow this subroutine
 SequentialMode
 'Main Program
 BeginProg
+  #If RadioNetwork = True Then
 ResetTryOK = True 'It's ok to try a reset once initial dead thresholds have been met, no need to wait.
 NextTryCnt = MaxNextTryCnt 'set nexttry to maxnexttry so we can reset the radio without waiting the first time.
+#EndIf
 	Scan (15,Sec,0,0)
 	#If RadioNetwork = True Then 'only compile if it's in a radio network
   If ReadRadSettings = True Then 'if user wants to store radio settings
@@ -604,6 +619,6 @@ NextTryCnt = MaxNextTryCnt 'set nexttry to maxnexttry so we can reset the radio 
 ResetTried = False 'set flag to false to start counter (if necessary)
 		CallTable RadioStatus
  #EndIf
-	NextScan
+	NextScan	
 EndProg
 
