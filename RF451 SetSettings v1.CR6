@@ -30,35 +30,37 @@ Const IsMaster = False 'is this datalogger the master within the network?
 Const RadioNetwork = True 'Is this station part of a radio network?
 
 #If IsMaster = True AND RadioNetwork = True Then
+  ConstTable
 Const NetworkSlaves = 2 'How many nodes are in the system?
+EndConstTable
 #If NetworkSlaves = 1 Then 'Declare how many nodes are in the system with conditional compile
-Const NeighborA = 3 'PakBus address of Node "A"
-Public NeighborAsecurity = "0000" 'Security code of neighbor A (use "0000" if no security code is set)
+Public NeighborApb = 3 'PakBus address of Node "A"
+Public NeighborASecCode = "0000" 'Security code of neighbor A (use "0000" if no security code is set)
 #ElseIf NetworkSlaves = 2 Then
-Const NeighborA = 3
-Public NeighborAsecurity = "0000"
-Const NeighborB = 4 'PakBus address of Node "B"
-Public NeighborBsecurity = "0000" 'Security code of neighbor B (use "0000" if no security code is set)
+Public NeighborApb = 3
+Public NeighborASecCode = "0000"
+Public NeighborBpb = 4 'PakBus address of Node "B"
+Public NeighborBSecCode = "0000" 'Security code of neighbor B (use "0000" if no security code is set)
 #ElseIf NetworkSlaves = 3 Then
-Const NeighborA = 3
-Const NeighborAsecurity = "0000"
-Const NeighborB = 4
-Const NeighborBsecurity = "0000"
-Const NeighborC = 5 'PakBus address of Node "C"
-Public NeighborCsecurity = "0000" 'Security code of neighbor C (use "0000" if no security code is set)
+Public NeighborApb = 3
+Public NeighborASecCode = "0000"
+Public NeighborBpb = 4
+Public NeighborBSecCode = "0000"
+Public NeighborCpb = 5 'PakBus address of Node "C"
+Public NeighborCSecCode = "0000" 'Security code of neighbor C (use "0000" if no security code is set)
 #ElseIf NetworkSlaves = 4 Then
-Const NeighborA = 3
-Const NeighborAsecurity = "0000"
-Const NeighborB = 4
-Public NeighborBsecurity = "0000"
-Const NeighborC = 5
-Public NeighborCsecurity = "0000"
-Const NeighborD = 6 'PakBus address of Node "D"
-Public NeighborDsecurity = "0000" 'Security code of neighbor D (use "0000" if no security code is set)
+Public NeighborApb = 3
+Public NeighborASecCode = "0000"
+Public NeighborBpb = 4
+Public NeighborBSecCode = "0000"
+Public NeighborCpb = 5
+Public NeighborCSecCode = "0000"
+Public NeighborDpb = 6 'PakBus address of Node "D"
+Public NeighborDSecCode = "0000" 'Security code of neighbor D (use "0000" if no security code is set)
 #EndIf
 #ElseIf RadioNetwork = True AND IsMaster = False Then 'if it's part of a radio network but not the master datalogger
-Const MasterPB = 2 'PakBus address of master datalogger
-Public MasterSecurity = "0000" 'security code of master datalogger
+Public MasterPB = 2 'PakBus address of master datalogger
+Public MasterSecCode = "0000" 'security code of master datalogger
 #EndIf
 
 'Declare Public Variables
@@ -96,7 +98,6 @@ Public ResetTryOK As Boolean 'flag to tell logger enough time passed to try a re
 Public RadResetAttempts As Float 'how many times has the radio attempted a reset?
 
 Const MaxLinksDeadCnt = 10 'max number of times all links can be dead before a reset is attempted.
-Public Count 'test variable
 
 'Declare variables based on if the logger is in a radio network and whether it's the master in the network or not.
 #If IsMaster = True AND RadioNetwork = True Then
@@ -106,46 +107,46 @@ Public SendToNetwork As Float 'Placeholder variable to send to the network, used
 Public ResetMaster As Boolean
 #If NetworkSlaves = 1 Then 'if there is only one node in the network (Simple Master/Slave communication, 2 dataloggers in network, 1 master, 1 slave)
 Public SendToAresult As Float 'Result of whether the SendVariable worked or not (cue for if comms were successful)
-Public SendToAFail As Float 'count for how many times the comms have failed
+Public SendToAFailCnt As Float 'count for how many times the comms have failed
 Public MaxAFails = 5 'max number of times comms can fail before resetting itself
 Public LinkToAdead As Boolean 'is the link to SlaveX considered dead (counter exceeds threshold)
 #ElseIf NetworkSlaves = 2 Then 'if there are two nodes in the network (both communicating directly through master, 3 dataloggers in network, 1 master, 2 slaves)
 Public SendToAresult As Float 
-Public SendToAFail As Float
+Public SendToAFailCnt As Float
 Public MaxAFails = 5 
   Public LinkToAdead As Boolean
   Public SendToBresult As Float
-  Public SendToBFail As Float
+  Public SendToBFailCnt As Float
   Public MaxBFails = 5
   Public LinkToBdead As Boolean
 #ElseIf NetworkSlaves = 3 Then 'if there are three nodes in the network (all three communicating directly through master, 4 dataloggers in network, 1 master, 3 slaves)
 Public SendToAresult As Float 
-Public SendToAFail As Float 
+Public SendToAFailCnt As Float 
 Public MaxAFails = 5 
   Public LinkToAdead As Boolean 
   Public SendToBresult As Float
-  Public SendToBFail As Float
+  Public SendToBFailCnt As Float
   Public MaxBFails = 5
   Public LinkToBdead As Boolean
   Public SendToCresult As Float
-  Public SendToCFail As Float
+  Public SendToCFailCnt As Float
   Public MaxCFails = 5
   Public LinkToCdead As Boolean
 #ElseIf NetworkSlaves = 4 Then 'if there are four nodes in the network (all four communicating directly through master 5 dataloggers in network, 1 master, 4 slaves)
 Public SendToAresult As Float 
-Public SendToAFail As Float 
+Public SendToAFailCnt As Float 
 Public MaxAFails = 5
   Public LinkToAdead As Boolean 
   Public SendToBresult As Float
-  Public SendToBFail As Float
+  Public SendToBFailCnt As Float
   Public MaxBFails = 5
   Public LinkToBdead As Boolean
   Public SendToCresult As Float
-  Public SendToCFail As Float
+  Public SendToCFailCnt As Float
   Public MaxCFails = 5
   Public LinkToCdead As Boolean
   Public SendToDresult As Float
-  Public SendToDFail As Float
+  Public SendToDFailCnt As Float
   Public MaxDFails = 5
   Public LinkToDdead As Boolean
   #EndIf
@@ -153,7 +154,7 @@ Public MaxAFails = 5
 #ElseIf IsMaster = False AND RadioNetwork = True Then 'if the datalogger is in the network, but not the master
 Public MasterReceive As Float 'Variable to store value from the master datalogger
 Public GetResult As Float 'was the communication successful (0 = successful)
-Public GetFail As Float 'counter for how many times communications have failed
+Public GetFailCnt As Float 'counter for how many times communications have failed
 Public MaxGetFails = 5 'threshold for how many times comms can fail before resetting the radio
 Public LinkDead As Boolean 'flag to indicate the link is considered dead (counter exceeded threshold)
 #EndIf
@@ -161,49 +162,55 @@ Public LinkDead As Boolean 'flag to indicate the link is considered dead (counte
 
 SetStatus ("USRDriveSize",16384) 'establish space on the USR drive. If this is not present, datalogger will not create a USR drive. Number of bytes must be an increment of 512 with a minimum of 8192.
 'Define Data Tables
-DataTable (Test,1,-1) 'testing table, holds nothing of importance for now.
-	Sample (1,Count,FP2)
-
+#If RadioNetwork = True Then
+DataTable (RadioStatus,1,1) 'testing table, holds nothing of importance for now.	
+#If IsMaster = True Then
+  #If NetworkSlaves = 1 Then
+Sample (1,SendToAFailCnt,FP2)
+Sample (1,LinkToAdead,Boolean)
+Sample (1,ResetTried,Boolean)
+Sample (1,RadResetAttempts,FP2)
+#ElseIf NetworkSlaves = 2 Then
+Sample (1,SendToAFailCnt,FP2)
+Sample (1,LinkToAdead,Boolean)
+Sample (1,SendToBFailCnt,FP2)
+Sample (1,LinkToBdead,Boolean)
+Sample (1,AllLinksDead,Boolean)
+Sample (1,ResetTried,Boolean)
+Sample (1,RadResetAttempts,FP2)
+#ElseIf NetworkSlaves = 3 Then
+Sample (1,SendToAFailCnt,FP2)
+Sample (1,LinkToAdead,Boolean)
+Sample (1,SendToBFailCnt,FP2)
+Sample (1,LinkToBdead,Boolean)
+Sample (1,SendToCFailCnt,FP2)
+Sample (1,LinkToCdead,Boolean)
+Sample (1,AllLinksDead,Boolean)
+Sample (1,ResetTried,Boolean)
+Sample (1,RadResetAttempts,FP2)
+#ElseIf NetworkSlaves = 4 Then
+Sample (1,SendToAFailCnt,FP2)
+Sample (1,LinkToAdead,Boolean)
+Sample (1,SendToBFailCnt,FP2)
+Sample (1,LinkToBdead,Boolean)
+Sample (1,SendToCFailCnt,FP2)
+Sample (1,LinkToCdead,Boolean)
+Sample (1,SendToDFailCnt,FP2)
+Sample (1,LinkToDdead,Boolean)
+Sample (1,AllLinksDead,Boolean)
+Sample (1,ResetTried,Boolean)
+Sample (1,RadResetAttempts,FP2)
+#EndIf 'Network Slaves
+#Else 'Not master
+Sample (1,GetFailCnt,FP2)
+Sample (1,LinkDead,Boolean)
+Sample (1,ResetTried,Boolean)
+Sample (1,RadResetAttempts,FP2)
+#EndIf 'Not master
 EndTable
+#EndIf 'Radio Network
 
 'Define Subroutines
-
-'Sub StoreRadDefaults
-'  Public RadDefVar(17)
-'  Public SendDefsString As String * 256
-'  Public RadDefStringLen As Long
-'  Public RadDefHandle As Long
-'  Public RadDefBytes As Long
-'  Public StoreDefRadCloseErr As Long
-'  Public DefRadVarCnt As Long
-'  RadDefVar(1) = DefRadOn
-'  RadDefVar(2) = DefOpMode
-'  RadDefVar(3) = DefFreqKey
-'  RadDefVar(4) = DefMaxPacket
-'  RadDefVar(5) = DefMinPacket
-'  RadDefVar(6) = DefDataRate
-'  RadDefVar(7) = DefTxPwr
-'  RadDefVar(8) = DefRetryTO
-'  RadDefVar(9) = DefLowPwr
-'  RadDefVar(10) = DefRepeaters
-'  RadDefVar(11) = DefPacketRepeat
-'  RadDefVar(12) = DefSlaveRetry
-'  RadDefVar(13) = DefFreqRepeat
-'  RadDefVar(14) = DefSlaveRepeat
-'  RadDefVar(15) = DefRxSubID
-'  RadDefVar(16) = DefTxSubID
-'  RadDefVar(17) = DefNetID
-'  SendDefsString = RadDefVar(1)
-'  For DefRadVarCnt 2 To 17
-'    SendDefsString = SendDefsString + "," + RadDefVar(DefRadVarCnt)
-'    Next DefRadVarCnt
-'RadDefStringLen = Len (SendDefsString)
-'RadDefHandle = FileOpen ("USR:DefaultRadioSettings.txt","w",-1)
-'Delay (1,100,msec)
-'RadDefBytes = FileWrite (RadDefHandle,SendDefsString,RadDefStringLen)
-'StoreDefRadCloseErr = FileClose(RadDefHandle)
-'EndSub
-
 '__________________________READ IN CURRENT SETTINGS OF RADIO_______________________
 Sub ReadRF
     RadOn = Settings.RadioEnabled
@@ -352,160 +359,160 @@ Sub CheckLinks 'follow this subroutine
     SendToNetwork = 0 'then reset (arbitrary numbers)
   EndIf
   #If NetworkSlaves = 1 Then 'if there's one slave in the network
-    SendVariables (SendToAresult,COMRF,-1,NeighborA,NeighborAsecurity,0,"Public","MasterReceive",SendToNetwork,1) 'send "SendToNetwork Variable to Node "A".
+    SendVariables (SendToAresult,COMRF,-1,NeighborApb,NeighborASecCode,0,"Public","MasterReceive",SendToNetwork,1) 'send "SendToNetwork Variable to Node "A".
     If SendToAresult <> 0 Then 'Result from above, 0 = successful comms, non-0 = failure of some sort.
-      SendToAFail = SendToAFail + 1 'if comms failed, count up
+      SendToAFailCntCnt = SendToAFailCntCnt + 1 'if comms failed, count up
       Else 'if comms successful
-        SendToAFail = 0 'reset counter
+        SendToAFailCntCnt = 0 'reset counter
         LinkToAdead = False 'set "Dead" flag to false
         ResetMaster = False 'don't set flag to reset the radio
         RadResetAttempts = 0 'Set reset attempt counter back to 0
     EndIf
-    If SendToAFail >= MaxAFails 'if fail counter exceeds threshold
+    If SendToAFailCntCnt >= MaxAFails 'if fail counter exceeds threshold
     LinkToAdead = True 'all links are dead
     ResetMaster = True 'set reset flag
-    SendToAFail = 0 'reset counter to 0, use counter to make sure radio doesn't continually attempt to reset once the link is considered dead
+    SendToAFailCntCnt = 0 'reset counter to 0, use counter to make sure radio doesn't continually attempt to reset once the link is considered dead
     EndIf
   #EndIf
   #If NetworkSlaves = 2 Then 'if 2 slaves in the network, see comments above
-    SendVariables (SendToAresult,COMRF,-1,NeighborA,NeighborAsecurity,0,"Public","MasterReceive",SendToNetwork,1) 'Slave A
+    SendVariables (SendToAresult,COMRF,-1,NeighborApb,NeighborASecCode,0,"Public","MasterReceive",SendToNetwork,1) 'Slave A
     If SendToAresult <> 0 Then
-      SendToAFail = SendToAFail + 1
+      SendToAFailCntCnt = SendToAFailCntCnt + 1
       RadResetAttempts = 0
       Else
-        SendToAFail = 0
+        SendToAFailCntCnt = 0
         LinkToAdead = False
         ResetMaster = False 'don't set flag to reset the radio
     EndIf
-    If SendToAFail >= MaxAFails
+    If SendToAFailCntCnt >= MaxAFails
     LinkToAdead = True
-    SendToAFail = 0
+    SendToAFailCnt = 0
     EndIf
-    SendVariables (SendToBresult,COMRF,-1,NeighborB,NeighborBsecurity,0,"Public","MasterReceive",SendToNetwork,1) 'Slave B
+    SendVariables (SendToBresult,COMRF,-1,NeighborBpb,NeighborBSecCode,0,"Public","MasterReceive",SendToNetwork,1) 'Slave B
     If SendToBresult <> 0 Then
-      SendToBFail = SendToBFail + 1
+      SendToBFailCnt = SendToBFailCnt + 1
       Else
-        SendToBFail = 0
+        SendToBFailCnt = 0
         LinkToBdead = False
         ResetMaster = False 'don't set flag to reset the radio
         RadResetAttempts = 0
     EndIf
-    If SendToBFail >= MaxBFails
+    If SendToBFailCnt >= MaxBFails
     LinkToBdead = True
     EndIf
     If LinkToAdead AND LinkToBdead Then 'only count towards fails if BOTH links are dead, something may be wrong with master.
       AllLinksDead = AllLinksDead + 1 'counter for how many times both links are dead
       If AllLinksDead >= MaxLinksDeadCnt Then 'if counter exceeds threshold
       ResetMaster = True 'set flag to reset master
-      SendToAFail = 0 'reset the counter for each slave
-      SendToBFail = 0
+      SendToAFailCnt = 0 'reset the counter for each slave
+      SendToBFailCnt = 0
       AllLinksDead = 0 'reset the "AllLinksDead" counter
     EndIf
     #EndIf
     #If NetworkSlaves = 3 Then 'if 3 slaves in network
-        SendVariables (SendToAresult,COMRF,-1,NeighborA,NeighborAsecurity,0,"Public","MasterReceive",SendToNetwork,1) 'Slave A
+        SendVariables (SendToAresult,COMRF,-1,NeighborApb,NeighborASecCode,0,"Public","MasterReceive",SendToNetwork,1) 'Slave A
     If SendToAresult <> 0 Then
-      SendToAFail = SendToAFail + 1
+      SendToAFailCnt = SendToAFailCnt + 1
       Else
-        SendToAFail = 0
+        SendToAFailCnt = 0
         LinkToAdead = False
         ResetMaster = False 'don't set flag to reset the radio
         RadResetAttempts = 0
     EndIf
-    If SendToAFail >= MaxAFails
+    If SendToAFailCnt >= MaxAFails
     LinkToAdead = True
     EndIf
-    SendVariables (SendToBresult,COMRF,-1,NeighborB,NeighborBsecurity,0,"Public","MasterReceive",SendToNetwork,1) 'Slave B
+    SendVariables (SendToBresult,COMRF,-1,NeighborBpb,NeighborBSecCode,0,"Public","MasterReceive",SendToNetwork,1) 'Slave B
     If SendToBresult <> 0 Then
-      SendToBFail = SendToBFail + 1
+      SendToBFailCnt = SendToBFailCnt + 1
       Else
-        SendToBFail = 0
+        SendToBFailCnt = 0
         LinkToBdead = False
         ResetMaster = False 'don't set flag to reset the radio
         RadResetAttempts = 0
     EndIf
-    If SendToBFail >= MaxBFails
+    If SendToBFailCnt >= MaxBFails
     LinkToBdead = True
     EndIf
-    SendVariables (SendToCresult,COMRF,-1,NeighborC,NeighborCsecurity,0,"Public","MasterReceive",SendToNetwork,1) 'Slave C
+    SendVariables (SendToCresult,COMRF,-1,NeighborCpb,NeighborCSecCode,0,"Public","MasterReceive",SendToNetwork,1) 'Slave C
     If SendToCresult <> 0 Then
-      SendToCFail = SendToCFail + 1
+      SendToCFailCnt = SendToCFailCnt + 1
       Else
-        SendToCFail = 0
+        SendToCFailCnt = 0
         LinkToCdead = False
         ResetMaster = False 'don't set flag to reset the radio
         RadResetAttempts = 0
     EndIf
-    If SendToCFail >= MaxCFails
+    If SendToCFailCnt >= MaxCFails
     LinkToCdead = True
     EndIf
     If LinkToAdead AND LinkToBdead AND LinkToCdead Then 'only count towards fails if ALL links are dead, something may be wrong with master.
             AllLinksDead = AllLinksDead + 1
       If AllLinksDead >= MaxLinksDeadCnt Then
       ResetMaster = True
-      SendToAFail = 0
-      SendToBFail = 0
-      SendToCFail = 0
+      SendToAFailCnt = 0
+      SendToBFailCnt = 0
+      SendToCFailCnt = 0
       AllLinksDead = 0
     EndIf
   #EndIf
   #If NetworkSlaves = 4 Then '4 slaves in network
-    SendVariables (SendToAresult,COMRF,-1,NeighborA,NeighborAsecurity,0,"Public","MasterReceive",SendToNetwork,1) 'Slave A
+    SendVariables (SendToAresult,COMRF,-1,NeighborApb,NeighborASecCode,0,"Public","MasterReceive",SendToNetwork,1) 'Slave A
     If SendToAresult <> 0 Then
-      SendToAFail = SendToAFail + 1
+      SendToAFailCnt = SendToAFailCnt + 1
       Else
-        SendToAFail = 0
+        SendToAFailCnt = 0
         LinkToAdead = False
         ResetMaster = False 'don't set flag to reset the radio
         RadResetAttempts = 0
     EndIf
-    If SendToAFail >= MaxAFails
+    If SendToAFailCnt >= MaxAFails
     LinkToAdead = True
     EndIf
-    SendVariables (SendToBresult,COMRF,-1,NeighborB,NeighborBsecurity,0,"Public","MasterReceive",SendToNetwork,1) 'Slave B
+    SendVariables (SendToBresult,COMRF,-1,NeighborBpb,NeighborBSecCode,0,"Public","MasterReceive",SendToNetwork,1) 'Slave B
     If SendToBresult <> 0 Then
-      SendToBFail = SendToBFail + 1
+      SendToBFailCnt = SendToBFailCnt + 1
       Else
-        SendToBFail = 0
+        SendToBFailCnt = 0
         LinkToBdead = False
         ResetMaster = False 'don't set flag to reset the radio
         RadResetAttempts = 0
     EndIf
-    If SendToBFail >= MaxBFails
+    If SendToBFailCnt >= MaxBFails
     LinkToBdead = True
     EndIf
-    SendVariables (SendToCresult,COMRF,-1,NeighborC,NeighborCsecurity,0,"Public","MasterReceive",SendToNetwork,1) 'Slave C
+    SendVariables (SendToCresult,COMRF,-1,NeighborCpb,NeighborCSecCode,0,"Public","MasterReceive",SendToNetwork,1) 'Slave C
     If SendToCresult <> 0 Then
-      SendToCFail = SendToCFail + 1
+      SendToCFailCnt = SendToCFailCnt + 1
       Else
-        SendToCFail = 0
+        SendToCFailCnt = 0
         LinkToCdead = False
         ResetMaster = False 'don't set flag to reset the radio
         RadResetAttempts = 0
     EndIf
-    If SendToCFail >= MaxCFails
+    If SendToCFailCnt >= MaxCFails
     LinkToCdead = True
     EndIf
-    SendVariables (SendToDresult,COMRF,-1,NeighborD,NeighborDsecurity,0,"Public","MasterReceive",SendToNetwork,1) 'Slave D
+    SendVariables (SendToDresult,COMRF,-1,NeighborDpb,NeighborDSecCode,0,"Public","MasterReceive",SendToNetwork,1) 'Slave D
     If SendToDresult <> 0 Then
-      SendToDFail = SendToDFail + 1
+      SendToDFailCnt = SendToDFailCnt + 1
       Else
-        SendToDFail = 0
+        SendToDFailCnt = 0
         LinkToDdead = False
         ResetMaster = False 'don't set flag to reset the radio
         RadResetAttempts = 0
     EndIf
-    If SendToDFail >= MaxDFails
+    If SendToDFailCnt >= MaxDFails
     LinkToDdead = True
     EndIf
     If LinkToAdead AND LinkToBdead AND LinkToCdead AND LinkToDdead Then 'only count towards fails if ALL links are dead, something may be wrong with master.
       AllLinksDead = AllLinksDead + 1
       If AllLinksDead >= MaxLinksDeadCnt Then
       ResetMaster = True
-      SendToAFail = 0
-      SendToBFail = 0
-      SendToCFail = 0
-      SendToDFail = 0
+      SendToAFailCnt = 0
+      SendToBFailCnt = 0
+      SendToCFailCnt = 0
+      SendToDFailCnt = 0
       AllLinksDead = 0
       EndIf
     EndIf
@@ -516,21 +523,21 @@ Sub CheckLinks 'follow this subroutine
  
  #If IsMaster = False Then 'if it's in a radio network, but not the master
    Sub CheckSlaveLink 'subroutine to run if it's a slave
-     GetVariables (GetResult,COMRF,-1,MasterPB,MasterSecurity,0,"Public","SendToNetwork",MasterReceive,1) 'GetVariable "SendToNetwork" from master, store in MasterReceive
+     GetVariables (GetResult,COMRF,-1,MasterPB,MasterSecCode,0,"Public","SendToNetwork",MasterReceive,1) 'GetVariable "SendToNetwork" from master, store in MasterReceive
      If GetResult <> 0 Then 'if GetVariables was NOT successful (success = 0, fail <> 0)
-       GetFail = GetFail + 1 'start counter
+       GetFailCnt = GetFailCnt + 1 'start counter
        Else 'if it was successful
-       GetFail = 0 'reset counter
+       GetFailCnt = 0 'reset counter
        LinkDead = False 'link is not dead
        ResetSlave = False 'don't set flag to reset the radio
        RadResetAttempts = 0 'Set reset attempt counter to 0
      EndIf
-     If GetFail >= MaxGetFails Then 'if failure counter exceeds threshold
+     If GetFailCnt >= MaxGetFails Then 'if failure counter exceeds threshold
        LinkDead = True 'link is considered dead
      EndIf
      If LinkDead = True Then 'if the link is dead
        ResetSlave = True 'set flag to reset radio
-       GetFail = 0 'reset counter to 0
+       GetFailCnt = 0 'reset counter to 0
        EndIf
     EndSub
  #EndIf
@@ -595,7 +602,7 @@ NextTryCnt = MaxNextTryCnt 'set nexttry to maxnexttry so we can reset the radio 
     SetRadToDefault = False 'reset flag to false
   EndIf
 ResetTried = False 'set flag to false to start counter (if necessary)
-		CallTable Test
+		CallTable RadioStatus
  #EndIf
 	NextScan
 EndProg
